@@ -15,7 +15,7 @@ EXECUTABLE	:= main
 endif
 
 all: $(BIN)/$(EXECUTABLE)
-
+	
 clean:
 	-$(RM) $(BIN)/$(EXECUTABLE)
 
@@ -23,4 +23,5 @@ run: all
 	./$(BIN)/$(EXECUTABLE)
 
 $(BIN)/$(EXECUTABLE): $(SRC)/*
+	[ -d ./$(BIN) ] || mkdir -p ./$(BIN)
 	$(CC) $(C_FLAGS) -I$(INCLUDE) -L$(LIB) $^ -o $@ $(LIBRARIES)
