@@ -4,72 +4,80 @@
 
 void parseInput(const char *str)
 {
-    // struct Stack *paranthesis = createStack(20);
-    // struct Stack *paranthesisIndexs = createStack(20);
+    // Return if string is empty
+    if (strlen(str) == 0 || str[0] == '\0')
+        return;
 
-    // const char symbols[5] = {';', '>', '<', '|', '&'};
-
-    // echo hi; echo hey; echo ho
-
-    // Remove spaces:
-    /* char strNoSpace[strlen(str)];
-    size_t i, newStrLength = 0;
-    for (i = 0; i < strlen(str); i++)
-    {
-        if (str[i] != ' ')
-        {
-            strNoSpace[newStrLength++] = str[i]
-        }
-    }*/
-    if (str == "" || str == " ") return;
-
-    int isSymbol = 0;
+    // Split string if two or more commands are existing in the string:
     size_t i;
     for (i = 0; i < strlen(str); i++)
     {
+        // SPLITTER (;)
+        // ; splits commands and just make them run seperately.
         if (str[i] == ';')
         {
             char strLeft[i + 1];
             char strRight[(strlen(str) - (i + 1))];
 
-            if ( str[i-1] == ' '){
-                strncpy(strLeft, str, i-1);
-                strLeft[i-1] = '\0';
-            }
-            else{
-                strncpy(strLeft, str, i);
-                strLeft[i] = '\0';
-            }
-            
-            if ( str[i+1] == ' '){
-                strncpy(strRight, str + (i + 2), (strlen(str) - (i+1)));
-            }
-            else{
-                strncpy(strRight, str + (i + 1), (strlen(str) - (i)));
+            // Left part:
+            if (i > 0)
+            {
+                if (str[i - 1] == ' ')
+                {
+                    strncpy(strLeft, str, i - 1);
+                    strLeft[i - 1] = '\0';
+                }
+                else
+                {
+                    strncpy(strLeft, str, i);
+                    strLeft[i] = '\0';
+                }
+                parseInput(strLeft);
             }
 
-
-            parseInput(strLeft);
-            parseInput(strRight);
+            // Right part:
+            if ((strlen(str) - (i)) > 0)
+            {
+                if (str[i + 1] == ' ')
+                {
+                    strncpy(strRight, str + (i + 2), (strlen(str) - (i + 1)));
+                }
+                else
+                {
+                    strncpy(strRight, str + (i + 1), (strlen(str) - (i)));
+                }
+                parseInput(strRight);
+            }
+            return;
+        }
+        else if (str[i] == "|")
+        {
+            // It can be PIPE "|" or OR "||"
+            return;
+        }
+        else if (str[i] == "&")
+        {
+            // It can be Background Starter("&") or AND("&&")
             return;
         }
     }
-
-    printf("Bu bir komut: %s\n", str);
+    processCommand(str);
 }
 
 void processCommand(const char *str)
 {
-    if (str == "echo")
+    if (strcmp(str, "echo") == 0)
     {
     }
-    else if (str == "sleep")
+    else if (strcmp(str, "sleep") == 0)
     {
     }
-    else if (str == "quit")
+    else if (strcmp(str, "quit") == 0 || strcmp(str, "exit") == 0)
     {
+        exit(0);
     }
     else
     {
+        printf("Tanimsiz komut: %s\n", str);
     }
 }
