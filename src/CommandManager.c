@@ -1,6 +1,7 @@
 #include "../include/CommandManager.h"
 #include "../include/stack.h"
 #include <string.h>
+#include <unistd.h>
 
 void parseInput(const char *str)
 {
@@ -66,18 +67,25 @@ void parseInput(const char *str)
 
 void processCommand(const char *str)
 {
-    if (strcmp(str, "echo") == 0)
+    char cmd[256], param1[256];
+    sscanf(str, "%s %s", cmd, param1);
+
+    if (strcmp(cmd, "echo") == 0)
     {
+        printf("%s\n", param1);
     }
-    else if (strcmp(str, "sleep") == 0)
+    else if (strcmp(cmd, "sleep") == 0)
     {
+        int secs;
+        sscanf(param1, "%d", &secs);
+        sleep(secs);
     }
-    else if (strcmp(str, "quit") == 0 || strcmp(str, "exit") == 0)
+    else if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "exit") == 0)
     {
         exit(0);
     }
     else
     {
-        printf("Tanimsiz komut: %s\n", str);
+        printf("Tanimsiz komut: %s\n", cmd);
     }
 }
