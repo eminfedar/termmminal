@@ -12,14 +12,17 @@ void parseInput(const char *str)
     if (strlen(str) == 0 || str[0] == '\0')
         return;
 
-    // Split string if two or more commands are existing in the string:
-    size_t i;
-    char *sentence = strtok(str, ";");
-    int isMultiCommand = (sentence != str);
-    while (sentence != NULL && sentence != str)
-    {
-        isMultiCommand = 1;
+    // Copy the str and protect original:
+    const char strProcess[strlen(str)];
+    strcpy(strProcess, str);
 
+    // Split string if two or more commands are existing in the string:
+    size_t i = 0;
+    char *sentence = strtok(str, ";");
+    int isMultiCommand = (strcmp(sentence, strProcess) != 0);
+    char *sentences[64];
+    while (sentence != NULL && isMultiCommand)
+    {
         /* Trim Spaces */
         size_t len = strlen(sentence);
         while (isspace(sentence[len - 1]))
@@ -27,32 +30,42 @@ void parseInput(const char *str)
         while (*sentence && isspace(*sentence))
             ++sentence, --len;
 
-        parseInput(sentence);
+        sentences[i++] = sentence; // Add it to sentence list
 
         sentence = strtok(NULL, ";"); // Next sentence.
     }
     if (isMultiCommand)
+    {
+        sentences[i] = NULL;
+
+        size_t c;
+        for (c = 0; c < i; c++)
+        {
+            parseInput(sentences[c]);
+        }
         return;
+    }
 
     // Returns NULL if didn't find the splitter token.
-    char *or = strtok(str, "||");
+    /* char *or = strtok(str, "||");
     char *and = strtok(str, "&&");
     char *outputForward = strtok(str, ">");
     char *inputForward = strtok(str, "<");
     char *pipe = strtok(str, "|");
     char *backgrounder = strtok(str, "&");
+    */
 
-    processCommand(str);
+    processCommand(strProcess);
 }
 
 void processCommand(const char *str)
 {
-    char cmd[256], param1[0xFFFF];
-    sscanf(str, "%s %s", cmd, param1);
+    char cmd[256], params[0xFFFF];
+    sscanf(str, "%s %65535[^\n]", cmd, params);
 
     if (strcmp(cmd, "echo") == 0)
     {
-        printf("%s\n", param1);
+        printf("%s\n", params);
     }
     else if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "exit") == 0)
     {

@@ -17,7 +17,6 @@ void startPrompting()
 
          // Remove the newline '\n'
         input[inputLength-1] = '\0';
-        inputLength--;
 
         // Process the input
         parseInput(input);
