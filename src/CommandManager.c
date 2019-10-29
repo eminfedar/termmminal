@@ -73,15 +73,12 @@ void processCommand(const char *str)
     }
     else
     {
-        runProgram(str);
+        runProgram(cmd, params);
     }
 }
 
-void runProgram(const char *str)
+void runProgram(const char *cmd, const char* params)
 {
-    char cmd[256], params[256];
-    sscanf(str, "%s %s", cmd, params);
-
     // Turn parameters into an array:
     char *paramArr[30] = {cmd, NULL};
     char *aParam = strtok(params, " ");
@@ -89,10 +86,11 @@ void runProgram(const char *str)
     while (aParam != NULL)
     {
         paramArr[i] = aParam;
+        printf("%s\n", aParam);
         i++;
         aParam = strtok(NULL, " ");
     }
-    paramArr[i] = NULL;
+    paramArr[i] = "\0";
 
     /*Spawn a child to run the program.*/
     pid_t pid = fork();
