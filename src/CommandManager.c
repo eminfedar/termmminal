@@ -86,7 +86,6 @@ void runProgram(const char *cmd, const char* params)
     while (aParam != NULL)
     {
         paramArr[i] = aParam;
-        printf("%s\n", aParam);
         i++;
         aParam = strtok(NULL, " ");
     }
