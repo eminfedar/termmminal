@@ -5,6 +5,7 @@
 #include <unistd.h>    /* for fork */
 #include <sys/types.h> /* for pid_t */
 #include <sys/wait.h>  /* for wait */
+#include "../include/ThreadManager.h"
 
 void parseInput(const char *str)
 {
@@ -52,13 +53,16 @@ void parseInput(const char *str)
     char *outputForward = strtok(str, ">");
     char *inputForward = strtok(str, "<");
     char *pipe = strtok(str, "|");
-    char *backgrounder = strtok(str, "&");
     */
 
-    processCommand(strProcess);
+    // Copy the str and protect original:
+    int waitProcess = strstr(strProcess, "&") != NULL && strstr(strProcess, "&&") == NULL ? 1 : 0;
+    if (waitProcess) strtok(strProcess, "&");
+
+    processCommand(strProcess, waitProcess);
 }
 
-void processCommand(const char *str)
+void processCommand(const char *str, int waitProcess)
 {
     char cmd[256], params[0xFFFF];
     sscanf(str, "%s %65535[^\n]", cmd, params);
@@ -73,32 +77,36 @@ void processCommand(const char *str)
     }
     else
     {
-        runProgram(cmd, params);
+        runProgram(cmd, params, waitProcess);
     }
 }
 
-void runProgram(const char *cmd, const char* params)
+void runProgram(const char *cmd, const char *params, int waitProcess)
 {
     // Turn parameters into an array:
-    char *paramArr[30] = {cmd, NULL};
-    char *aParam = strtok(params, " ");
+    char *parameterArray[30] = {cmd, NULL};
+    char *oneParameter = strtok(params, " ");
     size_t i = 1;
-    while (aParam != NULL)
+    while (oneParameter != NULL)
     {
-        paramArr[i] = aParam;
+        parameterArray[i] = oneParameter;
         i++;
-        aParam = strtok(NULL, " ");
+        oneParameter = strtok(NULL, " ");
     }
-    paramArr[i] = "\0";
+    parameterArray[i] = NULL;
 
     /*Spawn a child to run the program.*/
     pid_t pid = fork();
     if (pid == 0)
     {
-        if (execvp(paramArr[0], paramArr) < 0)
+        if (execvp(parameterArray[0], parameterArray) < 0)
         {
             fprintf(stderr, "Böyle bir komut veya program yok: %s\n", cmd);
         }
+    }
+    else if (waitProcess)
+    {
+        waitProcessInBackground(pid);
     }
     else
     {
