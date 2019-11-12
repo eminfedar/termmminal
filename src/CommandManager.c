@@ -11,7 +11,7 @@
 #include "../include/CommandManager.h"
 // #include "../include/stack.h"
 
-void parseInput(char *str)
+void parseInput(const char *str)
 {
     // Return if string is empty
     if (strlen(str) == 0 || str[0] == '\0')
@@ -21,10 +21,12 @@ void parseInput(char *str)
     char strProcess[strlen(str)];
     strcpy(strProcess, str);
 
+    // ls /usr/lib | grep lib; echo hey
+
     // Split string if two or more commands are existing in the string:
     size_t i = 0;
-    char *sentence = strtok(str, ";");
-    int isMultiCommand = (strstr(sentence, ";") != NULL);
+    int isMultiCommand = (strstr(strProcess, ";") != NULL);
+    char *sentence = strtok(strProcess, ";");
     char *sentences[64];
     while (sentence != NULL && isMultiCommand)
     {
@@ -38,10 +40,15 @@ void parseInput(char *str)
 
         size_t c;
         for (c = 0; c < i; c++)
-            parseInput(sentences[c]);
-
-        return;
+            runOneCommand(sentences[c]);
     }
+}
+
+void runOneCommand(const char *str)
+{
+    // Copy the str and protect original:
+    char strProcess[strlen(str)];
+    strcpy(strProcess, str);
 
     // Piping: ( echo hey | cat )
     const char *pipeWord = strstr(strProcess, "|");
