@@ -5,6 +5,7 @@
 #include <signal.h>
 
 void exitMain(){
+	printf("\n");
 	fflush(stdout);
 }
 
