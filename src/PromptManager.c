@@ -8,11 +8,10 @@ void startPrompting()
 {
     while (1)
     {
-        fflush(stdout);
-        printf("> ");
-
         char *input = NULL;
         size_t n;
+
+        printf("> ");
         size_t inputLength = getline(&input, &n, stdin);
 
          // Remove the newline '\n'
@@ -21,5 +20,9 @@ void startPrompting()
         // Process the input
         parseInput(input);
         free(input);
+        
+        fflush(stdout);
+        fflush(stderr);
+        fflush(stdin);
     }
 }
