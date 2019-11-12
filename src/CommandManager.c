@@ -1,38 +1,35 @@
-#include "../include/CommandManager.h"
-#include "../include/stack.h"
+
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>    /* for fork */
 #include <sys/types.h> /* for pid_t */
 #include <sys/wait.h>  /* for wait */
+#include <ctype.h> // isspace
+#include <signal.h> 
 #include "../include/ThreadManager.h"
+#include "../include/CommandManager.h"
+// #include "../include/stack.h"
 
-void parseInput(const char *str)
+void parseInput(char *str)
 {
     // Return if string is empty
     if (strlen(str) == 0 || str[0] == '\0')
         return;
 
     // Copy the str and protect original:
-    const char strProcess[strlen(str)];
+    char strProcess[strlen(str)];
     strcpy(strProcess, str);
 
     // Split string if two or more commands are existing in the string:
     size_t i = 0;
     char *sentence = strtok(str, ";");
-    int isMultiCommand = (strcmp(sentence, strProcess) != 0);
+    int isMultiCommand = (strstr(sentence, ";") != NULL);
     char *sentences[64];
     while (sentence != NULL && isMultiCommand)
     {
-        /* Trim Spaces */
-        size_t len = strlen(sentence);
-        while (isspace(sentence[len - 1]))
-            sentence[--len] = 0;
-        while (*sentence && isspace(*sentence))
-            ++sentence, --len;
-
+        sentence = trimSpaces(sentence);
         sentences[i++] = sentence; // Add it to sentence list
-
         sentence = strtok(NULL, ";"); // Next sentence.
     }
     if (isMultiCommand)
@@ -41,75 +38,138 @@ void parseInput(const char *str)
 
         size_t c;
         for (c = 0; c < i; c++)
-        {
             parseInput(sentences[c]);
-        }
+
         return;
     }
 
-    // Returns NULL if didn't find the splitter token.
-    /* char *or = strtok(str, "||");
-    char *and = strtok(str, "&&");
-    char *outputForward = strtok(str, ">");
-    char *inputForward = strtok(str, "<");
-    char *pipe = strtok(str, "|");
-    */
+    // Piping: ( echo hey | cat )
+    const char *pipeWord = strstr(strProcess, "|");
+    int havePipe = (pipeWord != NULL && pipeWord[1] != '|') ? 1 : 0;
 
-    // Copy the str and protect original:
-    int waitProcess = strstr(strProcess, "&") != NULL && strstr(strProcess, "&&") == NULL ? 1 : 0;
-    if (waitProcess) strtok(strProcess, "&");
+    // Backgrounding:
+    const char *backgroundWord = strstr(strProcess, "&");
+    int haveBackgrounder = (backgroundWord != NULL && backgroundWord[1] != '&') ? 1 : 0;
+    if (haveBackgrounder)
+        strtok(strProcess, "&"); // remove the last & from string.
 
-    processCommand(strProcess, waitProcess);
+    if (havePipe)
+    {
+        // Copy the str and protect original:
+        char strPipeSearch[strlen(strProcess)];
+        strcpy(strPipeSearch, strProcess);
+
+        // Turn parameters into an array:
+        char *pipedProcesses[40] = {NULL};
+        char *oneProcess = strtok(strPipeSearch, "|");
+        int i = 0;
+        while (oneProcess != NULL)
+        {
+            pipedProcesses[i] = trimSpaces(oneProcess);
+            i++;
+            oneProcess = strtok(NULL, "|");
+        }
+        pipedProcesses[i] = NULL;
+
+        int pipefd[2];
+        int inputOfPrev = 0;
+
+        int a;
+        for (a = 0; a < i; a++)
+        {
+            pipe(pipefd);
+            runProgram(pipedProcesses[a], 0, pipefd, inputOfPrev, a == i - 1 ? 1 : 0);
+
+            inputOfPrev = pipefd[0];
+        }
+    }
+    else
+    {
+        // Run normally
+        if (!runCommand(strProcess))
+        {
+            runProgram(strProcess, haveBackgrounder, 0, 0, 0);
+        }
+    }
 }
 
-void processCommand(const char *str, int waitProcess)
+int runCommand(const char *str)
 {
     char cmd[256], params[0xFFFF];
     sscanf(str, "%s %65535[^\n]", cmd, params);
 
-    if (strcmp(cmd, "echo") == 0)
-    {
-        printf("%s\n", params);
-    }
-    else if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "exit") == 0)
+    if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "exit") == 0)
     {
         exit(0);
     }
-    else
-    {
-        runProgram(cmd, params, waitProcess);
-    }
+
+    return 0;
 }
 
-void runProgram(const char *cmd, const char *params, int waitProcess)
+void exitSubProcess()
 {
-    // Turn parameters into an array:
-    char *parameterArray[30] = {cmd, NULL};
-    char *oneParameter = strtok(params, " ");
-    size_t i = 1;
+    fflush(stdout);
+    exit(EXIT_FAILURE);
+}
+
+void runProgram(const char *str, int haveBackgrounder, int pipefd[2], int inputOfPrev, int pipeLast)
+{
+    char strProcess[strlen(str)];
+    strcpy(strProcess, str);
+
+    char *parameterArray[40] = {0};
+    char *oneParameter = strtok(strProcess, " ");
+
+    size_t i = 0;
     while (oneParameter != NULL)
     {
-        parameterArray[i] = oneParameter;
-        i++;
+        parameterArray[i++] = oneParameter;
         oneParameter = strtok(NULL, " ");
     }
     parameterArray[i] = NULL;
 
     /*Spawn a child to run the program.*/
     pid_t pid = fork();
-    if (pid == 0)
+    if (pid == 0) // if chlid
     {
+        signal(SIGINT, exitSubProcess);
+        if (pipefd)
+        {
+            dup2(inputOfPrev, 0); // input from previous pipe's output
+
+            if (!pipeLast)
+            {
+                dup2(pipefd[1], 1); // output to pipe if not the last program;
+            }
+            close(pipefd[0]);
+            close(pipefd[1]);
+        }
+
         if (execvp(parameterArray[0], parameterArray) < 0)
         {
-            fprintf(stderr, "Böyle bir komut veya program yok: %s\n", cmd);
+            fprintf(stderr, "Böyle bir komut veya program yok: %s\n", parameterArray[0]);
+            exit(EXIT_FAILURE);
         }
     }
-    else if (waitProcess)
+    else if (pid > 0)
     {
-        waitProcessInBackground(pid);
+        if(pipefd)
+            close(pipefd[1]);
+        
+        if (haveBackgrounder)
+            waitProcessInBackground(pid);
+        else
+            waitpid(pid, NULL, 0);
     }
-    else
-    {
-        waitpid(pid, 0, 0); /* wait for child to exit */
-    }
+}
+
+char *trimSpaces(char *str)
+{
+    /* Trim Spaces */
+    size_t len = strlen(str);
+    while (isspace(str[len - 1]))
+        str[--len] = 0;
+    while (*str && isspace(*str))
+        ++str, --len;
+    return str;
 }

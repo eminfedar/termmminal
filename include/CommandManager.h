@@ -1,7 +1,8 @@
 #ifndef COMMANDMANAGER_H
 #define COMMANDMANAGER_H
 
-void parseInput(const char *str);
-void processCommand(const char *str, int waitProcess);
-void runProgram(const char *cmd, const char *params, int waitProcess);
+void parseInput(char *str);
+int runCommand(const char *str);
+void runProgram(const char *str, int haveBackgrounder, int pipefd[2], int inputOfPrev, int pipeLast);
+char* trimSpaces(char* str);
 #endif
