@@ -1,14 +1,14 @@
-#include <stdio.h> 
+// TAKEN FROM geeksforgeeks.org
 #include <stdlib.h> 
 #include <limits.h> 
 
 struct Stack { 
 	int top; 
-	unsigned capacity; 
+	int capacity; 
 	int* array; 
 }; 
 
-struct Stack* createStack(unsigned capacity) 
+struct Stack* createStack(int capacity) 
 { 
 	struct Stack* stack = (struct Stack*)malloc(sizeof(struct Stack)); 
 	stack->capacity = capacity; 
@@ -19,7 +19,7 @@ struct Stack* createStack(unsigned capacity)
  
 int isFull(struct Stack* stack) 
 { 
-	return stack->top == stack->capacity - 1; 
+	return stack->top == (int)(stack->capacity - 1); 
 } 
 
 int isEmpty(struct Stack* stack) 
@@ -32,7 +32,6 @@ void push(struct Stack* stack, int item)
 	if (isFull(stack)) 
 		return; 
 	stack->array[++stack->top] = item; 
-	printf("%d pushed to stack\n", item); 
 } 
 
 int pop(struct Stack* stack) 

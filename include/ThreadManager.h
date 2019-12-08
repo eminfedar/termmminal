@@ -2,6 +2,7 @@
 #define THREADMANAGER_H
 
 void _waitFunc(void* pid);
-void waitProcessInBackground(int pid);
+void _waitFuncSilent(void* pid);
+void waitProcessInBackground(int pid, int silent);
 
 #endif
